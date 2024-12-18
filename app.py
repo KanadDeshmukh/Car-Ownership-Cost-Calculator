@@ -1,102 +1,64 @@
 import streamlit as st
-import matplotlib.pyplot as plt
 
-# Title
-st.title("Car Ownership Cost Calculator V1.0 SVASK.inc ")
+# Function to calculate monthly vehicle cost
+def calculate_monthly_cost(car_cost, downpayment, loan_interest_rate, fuel_cost, parking_cost, toll_cost, service_fee, tax, insurance_yearly):
+    # Calculate loan amount and monthly loan cost
+    loan_amount = car_cost - downpayment
+    loan_monthly_cost = loan_amount * (loan_interest_rate / 100) / 12
+    
+    # Calculate yearly insurance cost
+    insurance_monthly_cost = insurance_yearly / 12
+    
+    # Calculate total monthly cost
+    total_monthly_cost = loan_monthly_cost + fuel_cost + parking_cost + toll_cost + service_fee + tax + insurance_monthly_cost
+    return total_monthly_cost
 
-# Inputs
-st.header("Enter Car Details")
-car_cost = st.number_input("Car Cost (in your currency)", min_value=0.0, step=1000.0, value=0.0)
-down_payment = st.number_input("Down Payment", min_value=0.0, step=500.0, value=0.0)
-interest_rate = st.number_input("Loan Interest Rate (Annual %)", min_value=0.0, step=0.1, value=0.0)
-fuel_cost = st.number_input("Average Monthly Fuel Cost", min_value=0.0, step=100.0, value=0.0)
-parking_cost = st.number_input("Monthly Parking Cost (if any)", min_value=0.0, step=50.0, value=0.0)
-toll_cost = st.number_input("Monthly Toll Cost (if any)", min_value=0.0, step=50.0, value=0.0)
-service_fee = st.number_input("Annual Service Fee (if any)", min_value=0.0, step=500.0, value=0.0)
-taxes = st.number_input("Annual Taxes (if any)", min_value=0.0, step=500.0, value=0.0)
-insurance = st.number_input("Annual Insurance Cost", min_value=0.0, step=500.0, value=0.0)
-purchase_year = st.number_input("Year of Purchase", min_value=2000, step=1, value=2024)
-current_year = st.number_input("Current Year", min_value=purchase_year, step=1, value=2024)
-monthly_income = st.number_input("Your Monthly Income (optional)", min_value=0.0, step=1000.0, value=0.0)
-
-# Validate Inputs
-if purchase_year > current_year:
-    st.error("Purchase year cannot be greater than the current year!")
-else:
-    # Calculations
-    loan_amount = car_cost - down_payment
-    years_owned = max(1, current_year - purchase_year)  # At least 1 year to avoid zero division
-    depreciation_rate = 0.15  # Example: 15% annual depreciation
-    resale_value = car_cost * ((1 - depreciation_rate) ** years_owned)
-    monthly_depreciation_cost = (car_cost - resale_value) / (years_owned * 12) if years_owned > 0 else 0
-    monthly_loan_emi = (loan_amount * (1 + (interest_rate / 100) * years_owned)) / (years_owned * 12) if years_owned > 0 else 0
-    monthly_cost = (
-        monthly_loan_emi +
-        (insurance / 12) +
-        fuel_cost +
-        parking_cost +
-        toll_cost +
-        (service_fee / 12) +
-        (taxes / 12)
-    )
-
-    # Outputs
-    st.header("Results")
-    st.write(f"*Total Monthly Cost of the Car:* {monthly_cost:.2f}")
-    st.write(f"*Predicted Resale Value:* {resale_value:.2f}")
-    st.write(f"*Monthly Depreciation Cost:* {monthly_depreciation_cost:.2f}")
-
-    # Efficiency Analysis
-    if monthly_income > 0:
-        efficiency = (monthly_cost / monthly_income) * 100
-        st.write(f"*Percentage of Monthly Income Spent on Car:* {efficiency:.2f}%")
-        if efficiency > 50:
-            st.warning("This car might not be economical for you.")
-        else:
-            st.success("This car seems economical for you.")
-
-    # Analysis Section
-    if car_cost > 0 and down_payment <= car_cost and years_owned > 0:
-        st.header("Analysis")
-
-        # Pie Chart for Cost Breakdown
-        labels = ['Loan EMI', 'Insurance', 'Fuel', 'Parking', 'Toll', 'Service Fee', 'Taxes']
-        values = [
-            monthly_loan_emi, 
-            (insurance / 12), 
-            fuel_cost, 
-            parking_cost, 
-            toll_cost, 
-            (service_fee / 12), 
-            (taxes / 12)
-        ]
-        
-        # Ensure valid values for the pie chart
-        if sum(values) > 0:
-            fig, ax = plt.subplots()
-            ax.pie(values, labels=labels, autopct='%1.1f%%', startangle=90)
-            ax.axis('equal')
-            st.subheader("Monthly Cost Breakdown")
-            st.pyplot(fig)
-        else:
-            st.warning("Unable to generate a pie chart: All cost components are zero or invalid.")
-
-        # Depreciation Curve
-        years = range(purchase_year, current_year + 1)
-        depreciation_values = [
-            car_cost * ((1 - depreciation_rate) ** (year - purchase_year)) for year in years
-        ]
-
-        # Ensure valid values for the depreciation curve
-        if all(value >= 0 for value in depreciation_values):
-            fig, ax = plt.subplots()
-            ax.plot(years, depreciation_values, marker='o')
-            ax.set_title("Depreciation Over Time")
-            ax.set_xlabel("Year")
-            ax.set_ylabel("Resale Value")
-            st.subheader("Depreciation Curve")
-            st.pyplot(fig)
-        else:
-            st.warning("Unable to generate the depreciation curve: Invalid values detected.")
+# Function to predict resell value and depreciation
+def resell_value_and_depreciation(car_cost, year_purchased, current_year):
+    # Assuming car depreciates by 10% per year
+    depreciation_rate = 0.10
+    age_of_car = current_year - year_purchased
+    if age_of_car >= 1:
+        depreciation_cost = car_cost * depreciation_rate * age_of_car
     else:
-        st.warning("Please provide valid inputs to generate analysis.")
+        depreciation_cost = 0
+    resell_value = car_cost - depreciation_cost
+    return resell_value, depreciation_cost
+
+# Streamlit UI
+st.title('Car Ownership Cost Calculator V1.1 SVASK.inc')
+
+# User inputs
+car_cost = st.number_input('Car Cost (in currency)', min_value=0.0, value=10000.0)
+downpayment = st.number_input('Downpayment (in currency)', min_value=0.0, value=1000.0)
+loan_interest_rate = st.number_input('Loan Interest Rate (%)', min_value=0.0, value=5.0)
+fuel_cost = st.number_input('Monthly Fuel Cost (in currency)', min_value=0.0, value=150.0)
+parking_cost = st.number_input('Monthly Parking Cost (in currency)', min_value=0.0, value=50.0)
+toll_cost = st.number_input('Monthly Toll Cost (in currency)', min_value=0.0, value=20.0)
+service_fee = st.number_input('Monthly Service Fee (if any, in currency)', min_value=0.0, value=30.0)
+tax = st.number_input('Monthly Tax (if any, in currency)', min_value=0.0, value=15.0)
+insurance_yearly = st.number_input('Annual Insurance Cost (in currency)', min_value=0.0, value=300.0)
+
+year_purchased = st.number_input('Year the Car Was Purchased', min_value=2000, max_value=2024, value=2020)
+current_year = 2024  # You can dynamically get this, but we'll use a constant for simplicity
+
+# Calculate monthly costs
+monthly_cost = calculate_monthly_cost(car_cost, downpayment, loan_interest_rate, fuel_cost, parking_cost, toll_cost, service_fee, tax, insurance_yearly)
+
+# Resell value and depreciation
+resell_value, depreciation_cost = resell_value_and_depreciation(car_cost, year_purchased, current_year)
+
+# Display results
+st.subheader(f"Total Monthly Cost of Vehicle: {monthly_cost:.2f} (in currency)")
+st.subheader(f"Estimated Resell Value After Depreciation: {resell_value:.2f} (in currency)")
+st.subheader(f"Total Depreciation Cost: {depreciation_cost:.2f} (in currency)")
+
+# Efficiency comment
+income = st.number_input('Your Monthly Income (in currency)', min_value=0.0, value=5000.0)
+
+if monthly_cost <= income * 0.2:
+    st.write("This car is very affordable for you.")
+elif monthly_cost <= income * 0.4:
+    st.write("This car is somewhat affordable, but consider your budget carefully.")
+else:
+    st.write("This car might be too expensive for your current income.")
